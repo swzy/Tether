@@ -78,6 +78,7 @@ public class DemoUtils {
    *     an installation was already requested. This is true if this method previously returned
    *     null. and the camera permission has been granted.
    */
+
   public static Session createArSession(Activity activity, boolean installRequested)
       throws UnavailableException {
     Session session = null;

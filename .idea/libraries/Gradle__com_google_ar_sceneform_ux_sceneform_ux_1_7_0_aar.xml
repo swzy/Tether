@@ -1,8 +1,8 @@
 <component name="libraryTable">
   <library name="Gradle: com.google.ar.sceneform.ux:sceneform-ux:1.7.0@aar">
     <CLASSES>
-      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/sceneform-ux-1.7.0.aar/e99000989d8ec499619b22b3579ccbf1/jars/classes.jar!/" />
-      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/sceneform-ux-1.7.0.aar/e99000989d8ec499619b22b3579ccbf1/res" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/sceneform-ux-1.7.0.aar/caba16e76cc90f12122ecf504c7385db/res" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/sceneform-ux-1.7.0.aar/caba16e76cc90f12122ecf504c7385db/jars/classes.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>

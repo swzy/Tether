@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "259092277317",
+    "firebase_url": "https://tether-61559.firebaseio.com",
+    "project_id": "tether-61559",
+    "storage_bucket": "tether-61559.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:259092277317:android:25824f46accb3544",
+        "android_client_info": {
+          "package_name": "com.example.android.tether"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "259092277317-tjs81tsrc2ag2a68eku38vr063bnpr2b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.android.tether",
+            "certificate_hash": "818a7551c69d7fab2510318f24376ae0c79bba4b"
+          }
+        },
+        {
+          "client_id": "259092277317-fk2pqgv35qlhn72ovtr13j0mroi2u6v3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASSfUNa2-63dCTx_EvbhW1WzhEPBYh1ZI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "259092277317-fk2pqgv35qlhn72ovtr13j0mroi2u6v3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
