@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -35,6 +36,8 @@ import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ViewRenderable;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -72,6 +75,7 @@ public class LocationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sceneform);
         arSceneView = findViewById(R.id.ar_scene_view);
+        
 
         // Build a renderable from a 2D View.
         // This is renderable will be combined with the ModelRenderable object (below). This layout can contain pertinent, dynamic information. - SY
@@ -154,12 +158,13 @@ public class LocationActivity extends AppCompatActivity {
                                         View eView = exampleLayoutRenderable.getView();
                                         TextView distanceTextView = eView.findViewById(R.id.textView2);
                                         distanceTextView.setText(node.getDistance() + "M");
+                                        Log.i(null, "Distance is: " + node.getDistance() + "M");
                                     }
                                 });
                                 // Adding the marker
                                 locationScene.mLocationMarkers.add(layoutLocationMarker);
 
-                                //Fixed incessant layout/positioning update - Layout now 'tethered' to phone location
+                                //SY - Fixed incessant layout/positioning update - BUG: Layout now too close to phone location (May be unrelated).
                                 locationScene.setAnchorRefreshInterval(120);
 
                                 // Adding a simple location marker of a 3D model
@@ -195,6 +200,7 @@ public class LocationActivity extends AppCompatActivity {
 
         // Lastly request CAMERA & fine location permission which is required by ARCore-Location.
         ARLocationPermissionHelper.requestPermission(this);
+
     }
 
     /**
