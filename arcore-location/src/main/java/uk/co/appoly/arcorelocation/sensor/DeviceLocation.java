@@ -117,8 +117,8 @@ public class DeviceLocation implements LocationListener {
                 //API level 9 and up
                 criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
                 criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
-                //criteria.setBearingAccuracy(Criteria.ACCURACY_HIGH);
-                //criteria.setSpeedAccuracy(Criteria.ACCURACY_HIGH);
+                criteria.setBearingAccuracy(Criteria.ACCURACY_HIGH);
+                criteria.setSpeedAccuracy(Criteria.ACCURACY_HIGH);
 
                 Integer gpsFreqInMillis = 5000;
                 Integer gpsFreqInDistance = 1;  // in meters
