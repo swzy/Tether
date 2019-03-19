@@ -44,6 +44,7 @@ import java.util.concurrent.ExecutionException;
 
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
+import uk.co.appoly.arcorelocation.sensor.DeviceLocation;
 import uk.co.appoly.arcorelocation.rendering.LocationNode;
 import uk.co.appoly.arcorelocation.rendering.LocationNodeRender;
 import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
@@ -66,6 +67,8 @@ public class LocationActivity extends AppCompatActivity {
 
     // Our ARCore-Location scene
     private LocationScene locationScene;
+    // Our LocationScene Object;
+    private DeviceLocation mDeviceLocation;
 
 
     @Override
@@ -75,7 +78,6 @@ public class LocationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sceneform);
         arSceneView = findViewById(R.id.ar_scene_view);
-        
 
         // Build a renderable from a 2D View.
         // This is renderable will be combined with the ModelRenderable object (below). This layout can contain pertinent, dynamic information. - SY
@@ -145,10 +147,16 @@ public class LocationActivity extends AppCompatActivity {
                                 // First, sets a layout at a set of given GPS coordinates
 
                                 LocationMarker layoutLocationMarker = new LocationMarker(
-                                        -73.989308,
-                                        40.741895,
+                                        -84.322792,
+                                        33.790312,
                                         getExampleView()
                                 );
+
+                                locationScene.setMinimalRefreshing(false);
+                                //SY - Fixed incessant layout/positioning update - BUG: Layout now too close to phone location (May be unrelated).
+                                locationScene.setAnchorRefreshInterval(120);
+
+                                locationScene.setRefreshAnchorsAsLocationChanges(true);
 
                                 // An example "onRender" event, called every frame
                                 // Updates the layout with the markers distance
@@ -157,15 +165,11 @@ public class LocationActivity extends AppCompatActivity {
                                     public void render(LocationNode node) {
                                         View eView = exampleLayoutRenderable.getView();
                                         TextView distanceTextView = eView.findViewById(R.id.textView2);
-                                        distanceTextView.setText(node.getDistance() + "M");
-                                        Log.i(null, "Distance is: " + node.getDistance() + "M");
+                                        distanceTextView.setText(node.getDistanceInAR() + "M");
                                     }
                                 });
                                 // Adding the marker
                                 locationScene.mLocationMarkers.add(layoutLocationMarker);
-
-                                //SY - Fixed incessant layout/positioning update - BUG: Layout now too close to phone location (May be unrelated).
-                                locationScene.setAnchorRefreshInterval(120);
 
                                 // Adding a simple location marker of a 3D model
 //                                locationScene.mLocationMarkers.add(
@@ -186,6 +190,7 @@ public class LocationActivity extends AppCompatActivity {
 
                             if (locationScene != null) {
                                 locationScene.processFrame(frame);
+
                             }
 
                             if (loadingMessageSnackbar != null) {

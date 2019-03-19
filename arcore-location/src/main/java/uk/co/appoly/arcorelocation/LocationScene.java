@@ -33,10 +33,10 @@ public class LocationScene {
     public ArrayList<LocationMarker> mLocationMarkers = new ArrayList<>();
     // Anchors are currently re-drawn on an interval. There are likely better
     // ways of doing this, however it's sufficient for now.
-    private int anchorRefreshInterval = 1000 * 5; // 5 seconds
+    private int anchorRefreshInterval = 1000 * 5; // 5 seconds, CHANGED TO 10 SEC - SY
     // Limit of where to draw markers within AR scene.
     // They will auto scale, but this helps prevents rendering issues
-    private int distanceLimit = 20;
+    private int distanceLimit = 100;
     private boolean offsetOverlapping = false;
     // Bearing adjustment. Can be set to calibrate with true north
     private int bearingAdjustment = 0;

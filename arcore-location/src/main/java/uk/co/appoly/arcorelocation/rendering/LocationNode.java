@@ -171,6 +171,8 @@ public class LocationNode extends AnchorNode {
 
             scale *= scaleModifier;
 
+            //Code for setting the 'world' scale based around camera and node
+
             Vector3 cameraPosition = getScene().getCamera().getWorldPosition();
             Vector3 nodePosition = n.getWorldPosition();
             n.setWorldPosition(new Vector3(n.getWorldPosition().x, getHeight(), n.getWorldPosition().z));
@@ -180,8 +182,6 @@ public class LocationNode extends AnchorNode {
             n.setWorldRotation(lookRotation);
             //locationMarker.node.setWorldScale(new Vector3(scale, scale, scale));
             n.setWorldScale(new Vector3(scale, scale, scale));
-
-
 
         }
     }
