@@ -36,7 +36,7 @@ public class LocationScene {
     private int anchorRefreshInterval = 1000 * 5; // 5 seconds, CHANGED TO 10 SEC - SY
     // Limit of where to draw markers within AR scene.
     // They will auto scale, but this helps prevents rendering issues
-    private int distanceLimit = 100;
+    private int distanceLimit = 20;
     private boolean offsetOverlapping = false;
     // Bearing adjustment. Can be set to calibrate with true north
     private int bearingAdjustment = 0;

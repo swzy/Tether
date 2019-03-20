@@ -186,5 +186,6 @@
     <orderEntry type="library" name="Gradle: com.google.auto.value:auto-value-annotations:1.6@jar" level="project" />
     <orderEntry type="library" name="Gradle: com.google.android.gms:play-services-tasks:16.0.1@aar" level="project" />
     <orderEntry type="module" module-name="arcore-location" />
+    <orderEntry type="module" module-name="arcore-location" />
   </component>
 </module>

@@ -19,8 +19,13 @@ public class LocationNode extends AnchorNode {
 
     private LocationMarker locationMarker;
     private LocationNodeRender renderEvent;
+    //Calculated GPS distance
     private int distance;
+    //Distance in AR to marker
     private double distanceInAR;
+    //For UI purposes
+    private double destLat, destLong;
+    private double deviceLat, deviceLong;
     private float scaleModifier = 1F;
     private float height = 0F;
     private float gradualScalingMinScale = 0.8F;
@@ -62,17 +67,41 @@ public class LocationNode extends AnchorNode {
     public int getDistance() {
         return distance;
     }
-
-    public double getDistanceInAR() {
-        return distanceInAR;
-    }
-
     public void setDistance(int distance) {
         this.distance = distance;
     }
 
+    public double getDistanceInAR() {
+        return distanceInAR;
+    }
     public void setDistanceInAR(double distanceInAR) {
         this.distanceInAR = distanceInAR;
+    }
+
+    //For UI and testing purposes
+    public double getDeviceLat() {
+        return deviceLat;
+    }
+    public void setDeviceLat(double deviceLat) {
+        this.deviceLat = deviceLat;
+    }
+    public double getDeviceLong() {
+        return deviceLong;
+    }
+    public void setDeviceLong(double deviceLong) {
+        this.deviceLong = deviceLong;
+    }
+    public double getDestLat() {
+        return destLat;
+    }
+    public void setDestLat(double destLat) {
+        this.destLat = destLat;
+    }
+    public double getDestLong() {
+        return destLong;
+    }
+    public void setDestLong(double destLong) {
+        this.destLong = destLong;
     }
 
     public LocationMarker.ScalingMode getScalingMode() {
@@ -140,6 +169,10 @@ public class LocationNode extends AnchorNode {
                             0)
             );
 
+            setDeviceLat(locationScene.deviceLocation.currentBestLocation.getLatitude());
+            setDeviceLong(locationScene.deviceLocation.currentBestLocation.getLongitude());
+            setDestLat(locationMarker.latitude);
+            setDestLong(locationMarker.longitude);
             setDistance(markerDistance);
 
             // Limit the distance of the Anchor within the scene.
@@ -171,8 +204,7 @@ public class LocationNode extends AnchorNode {
 
             scale *= scaleModifier;
 
-            //Code for setting the 'world' scale based around camera and node
-
+            //Code for setting the 'world' rendering based on camera and children nodes
             Vector3 cameraPosition = getScene().getCamera().getWorldPosition();
             Vector3 nodePosition = n.getWorldPosition();
             n.setWorldPosition(new Vector3(n.getWorldPosition().x, getHeight(), n.getWorldPosition().z));
