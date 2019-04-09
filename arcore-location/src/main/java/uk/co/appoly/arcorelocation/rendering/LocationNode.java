@@ -207,6 +207,8 @@ public class LocationNode extends AnchorNode {
             //Code for setting the 'world' rendering based on camera and children nodes
             Vector3 cameraPosition = getScene().getCamera().getWorldPosition();
             Vector3 nodePosition = n.getWorldPosition();
+
+            //Setting nodePosition, then resetting WorldPosition - it should change (?)
             n.setWorldPosition(new Vector3(n.getWorldPosition().x, getHeight(), n.getWorldPosition().z));
             Vector3 direction = Vector3.subtract(cameraPosition, nodePosition);
             Quaternion lookRotation = Quaternion.lookRotation(direction, Vector3.up());

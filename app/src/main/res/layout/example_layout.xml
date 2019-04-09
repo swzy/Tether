@@ -15,24 +15,24 @@
         android:text="@string/sample_text"
         android:textColor="#fff" />
 
-    <TextView
-        android:id="@+id/gpsDistance"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#fff"
-        android:textSize="24sp" />
+    <!--<TextView-->
+        <!--android:id="@+id/gpsDistance"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:textColor="#fff"-->
+        <!--android:textSize="24sp" />-->
 
-    <TextView
-        android:id="@+id/deviceLocation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#fff"
-        android:textSize="24sp" />
+    <!--<TextView-->
+        <!--android:id="@+id/deviceLocation"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:textColor="#fff"-->
+        <!--android:textSize="24sp" />-->
 
-    <TextView
-        android:id="@+id/markerLocation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#fff"
-        android:textSize="24sp" />
+    <!--<TextView-->
+        <!--android:id="@+id/markerLocation"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:textColor="#fff"-->
+        <!--android:textSize="24sp" />-->
 </LinearLayout>

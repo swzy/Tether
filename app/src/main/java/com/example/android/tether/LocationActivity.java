@@ -20,7 +20,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -28,6 +27,8 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.android.tether.DemoUtils;
+import com.example.android.tether.R;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
@@ -44,15 +45,12 @@ import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ViewRenderable;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
-import uk.co.appoly.arcorelocation.sensor.DeviceLocation;
 import uk.co.appoly.arcorelocation.rendering.LocationNode;
 import uk.co.appoly.arcorelocation.rendering.LocationNodeRender;
 import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
@@ -64,12 +62,14 @@ import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
 public class LocationActivity extends AppCompatActivity {
     private boolean installRequested;
     private boolean hasFinishedLoading = false;
+    private boolean hasPlacedCar = false;
+    private boolean hasSetLayoutRenderable = false;
+    private boolean hasSetAndyRenderable = false;
+
     private GestureDetector gestureDetector;
-    
     private Snackbar loadingMessageSnackbar = null;
 
     private ArSceneView arSceneView;
-    private boolean hasPlacedCarObject;
 
     // Renderables for this example
     private ModelRenderable andyRenderable;
@@ -77,6 +77,11 @@ public class LocationActivity extends AppCompatActivity {
 
     // Our ARCore-Location scene
     private LocationScene locationScene;
+    private LocationMarker layoutLocationMarker;
+
+    private double currentLat = 0;
+    private double currentLong = 0;
+
 
 
     @Override
@@ -88,7 +93,6 @@ public class LocationActivity extends AppCompatActivity {
         arSceneView = findViewById(R.id.ar_scene_view);
 
         // Build a renderable from a 2D View.
-        // This is renderable will be combined with the ModelRenderable object (below). This layout can contain pertinent, dynamic information. - SY
         CompletableFuture<ViewRenderable> exampleLayout =
                 ViewRenderable.builder()
                         .setView(this, R.layout.example_layout)
@@ -96,7 +100,6 @@ public class LocationActivity extends AppCompatActivity {
 
         // When you build a Renderable, Sceneform loads its resources in the background while returning
         // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
-        // This renderable will be a Model which can be our Tether icon. - SY
         CompletableFuture<ModelRenderable> andy = ModelRenderable.builder()
                 .setSource(this, R.raw.andy)
                 .build();
@@ -127,9 +130,23 @@ public class LocationActivity extends AppCompatActivity {
 
                             return null;
                         });
-        // Set an update listener on the Scene that will hide the loading message once a Plane is
-        // detected.
 
+        // Set a touch listener on the Scene to listen for taps.
+        arSceneView
+                .getScene()
+                .setOnTouchListener(
+                        (HitTestResult hitTestResult, MotionEvent event) -> {
+                            // If the pad hasn't been placed yet, detect a tap and then check to see if
+                            // the tap occurred on an ARCore plane.
+                            if (!hasPlacedCar) {
+                                return gestureDetector.onTouchEvent(event);
+                            }
+
+                            // Otherwise return false so that the touch event can propagate to the scene.
+                            return false;
+                        });
+
+        // Set up a tap gesture detector.
         gestureDetector =
                 new GestureDetector(
                         this,
@@ -146,150 +163,91 @@ public class LocationActivity extends AppCompatActivity {
                             }
                         });
 
+        // Set an update listener on the Scene that will hide the loading message once a Plane is
+        // detected.
+        arSceneView
+                .getScene()
+                .addOnUpdateListener(
+                        frameTime -> {
+                            if (!hasFinishedLoading) {
+                                return;
+                            }
 
-            // Set a touch listener on the Scene to listen for taps.
-            arSceneView
-                    .getScene()
-                    .setOnTouchListener(
-                            (HitTestResult hitTestResult, MotionEvent event) -> {
-                                // If the carObject hasn't been placed yet, detect a tap and then check to see if
-                                // the tap occurred on an ARCore plane to place the solar system.
-                                if (!hasPlacedCarObject) {
-                                    return gestureDetector.onTouchEvent(event);
-                                }
+                            if (locationScene == null) {
+                                // If our locationScene object hasn't been setup yet, this is a good time to do it
+                                // We know that here, the AR components have been initiated.
+                                locationScene = new LocationScene(this, this, arSceneView);
 
-                                // Otherwise return false so that the touch event can propagate to the scene.
-                                return false;
-                            });
+                                // Now lets create our location markers.
+                                // First, a layout
+                                // TODO: Represent this as our device location on HitResult tap
+                                layoutLocationMarker = new LocationMarker(
+                                        -84.386212,
+                                        33.750697,
+                                        getExampleView()
+                                );
 
+                                // An example "onRender" event, called every frame
+                                // Updates the layout with the markers distance
+                                layoutLocationMarker.setRenderEvent(new LocationNodeRender() {
+                                    @Override
+                                    public void render(LocationNode node) {
+                                        View eView = exampleLayoutRenderable.getView();
+                                        TextView distanceTextView = eView.findViewById(R.id.textView);
+                                        distanceTextView.setText(node.getDistance() + "M");
+                                    }
+                                });
+                            }
 
-        /*
+                            Frame frame = arSceneView.getArFrame();
+                            if (frame == null) {
+                                return;
+                            }
 
-            SY - this is one of the key methods that instantiate the location markers
+                            if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+                                return;
+                            }
 
-         */
+                            // TODO: Mark GPS location for storage in Firebase container
+                            if (locationScene != null) {
+                                locationScene.processFrame(frame);
 
+                                if (hasPlacedCar) {
 
-            arSceneView
-                    .getScene()
-                    //Changed from 'setOnUpdateListener()'
-                    .addOnUpdateListener(
-                            frameTime -> {
-                                if (!hasFinishedLoading) {
-                                    return;
-                                }
+                                    if (!hasSetLayoutRenderable) {
+                                        // Adding the marker
+                                        locationScene.mLocationMarkers.add(layoutLocationMarker);
+                                        hasSetLayoutRenderable = true;
+                                    }
 
-                                if (locationScene == null) {
-                                    // If our locationScene object hasn't been setup yet, this is a good time to do it
-                                    // We know that here, the AR components have been initiated.
-                                    locationScene = new LocationScene(this, this, arSceneView);
+                                    if (!hasSetAndyRenderable) {
+                                        //Adding a simple location marker of a 3D model
+                                        locationScene.mLocationMarkers.add(
+                                                new LocationMarker(
+                                                        -84.386212,
+                                                        33.750697,
+                                                        setCarModel()));
 
-                                    // Now lets create our location markers.
-                                    // First, sets a layout at a set of given GPS coordinates
+                                        currentLat = 33.750697;
+                                        currentLong = -84.386212;
 
-                                    LocationMarker layoutLocationMarker = new LocationMarker(
-                                            -84.322792,
-                                            33.790312,
-                                            getExampleView()
-                                    );
-
-                                    locationScene.setMinimalRefreshing(false);
-                                    //SY - Fixed incessant layout/positioning update - BUG: Layout now too close to phone location (May be unrelated).
-                                    locationScene.setAnchorRefreshInterval(120);
-
-                                    locationScene.setRefreshAnchorsAsLocationChanges(true);
-
-                                    // An example "onRender" event, called every frame
-                                    // Updates the layout with the markers distance
-                                    layoutLocationMarker.setRenderEvent(new LocationNodeRender() {
-                                        View distView = exampleLayoutRenderable.getView();
-                                        TextView distanceTextView = distView.findViewById(R.id.gpsDistance);
-
-                                        View devView = exampleLayoutRenderable.getView();
-                                        TextView deviceTextView = devView.findViewById(R.id.deviceLocation);
-
-                                        View markView = exampleLayoutRenderable.getView();
-                                        TextView markTextView = markView.findViewById(R.id.markerLocation);
-
-                                        @Override
-                                        public void render(LocationNode node) {
-                                            distanceTextView.setText(node.getDistance() + "M");
-                                            deviceTextView.setText("Device - Lat: " + node.getDeviceLat() + ", Long: " + node.getDeviceLong());
-                                            markTextView.setText("Marker - Lat: " + node.getDestLat() + ", Long: " + node.getDestLong());
-                                        }
-                                    });
-                                    // Adding the marker
-                                    locationScene.mLocationMarkers.add(layoutLocationMarker);
-
-                                    // Adding a simple location marker of a 3D model
-//                                locationScene.mLocationMarkers.add(
-//                                        new LocationMarker(
-//                                                -0.119677,
-//                                                51.478494,
-//                                                getAndy()));
-                                }
-
-                                Frame frame = arSceneView.getArFrame();
-                                if (frame == null) {
-                                    return;
-                                }
-
-                                if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
-                                    return;
-                                }
-
-                                if (locationScene != null) {
-                                    locationScene.processFrame(frame);
-
-                                }
-
-                                if (loadingMessageSnackbar != null) {
-                                    for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
-                                        if (plane.getTrackingState() == TrackingState.TRACKING) {
-                                            hideLoadingMessage();
-                                        }
+                                        hasSetAndyRenderable = true;
                                     }
                                 }
-                            });
+                            }
+
+                            if (loadingMessageSnackbar != null) {
+                                for (Plane plane : frame.getUpdatedTrackables(Plane.class)) {
+                                    if (plane.getTrackingState() == TrackingState.TRACKING) {
+                                        hideLoadingMessage();
+                                    }
+                                }
+                            }
+                        });
 
 
-            // Lastly request CAMERA & fine location permission which is required by ARCore-Location.
-            ARLocationPermissionHelper.requestPermission(this);
-
-            //END OF onCreate
-        }
-
-
-    private void onSingleTap (MotionEvent tap){
-        if (!hasFinishedLoading) {
-            // We can't do anything yet.
-            return;
-        }
-
-        Frame frame = arSceneView.getArFrame();
-        if (frame != null) {
-            if (!hasPlacedCarObject && tryPlaceCarObject(tap, frame)) {
-                hasPlacedCarObject = true;
-            }
-        }
-    }
-
-    private boolean tryPlaceCarObject (MotionEvent tap, Frame frame){
-        if (tap != null && frame.getCamera().getTrackingState() == TrackingState.TRACKING) {
-            for (HitResult hit : frame.hitTest(tap)) {
-                Trackable trackable = hit.getTrackable();
-                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())) {
-                    // Create the Anchor.
-                    Anchor anchor = hit.createAnchor();
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setParent(arSceneView.getScene());
-                    Node car = createCar();
-                    anchorNode.addChild(car);
-                    return true;
-                }
-            }
-        }
-        return false;
+        // Lastly request CAMERA & fine location permission which is required by ARCore-Location.
+        ARLocationPermissionHelper.requestPermission(this);
     }
 
     /**
@@ -313,44 +271,63 @@ public class LocationActivity extends AppCompatActivity {
         return base;
     }
 
-    private Node createCar() {
+    /***
+     * Example Node of a 3D model
+     *
+     * @return
+     */
+    private Node setCarModel() {
         Node base = new Node();
-        Node car = new Node();
+        Node model = new Node();
+        model.setParent(base);
+        model.setLocalPosition(new Vector3(0.0f, 0.5f, 0.0f));
 
-        car.setParent(base);
-        car.setLocalPosition(new Vector3(0.0f, 0.5f, 0.0f));
+        Node modelPlacer = new Node();
+        modelPlacer.setParent(model);
+        modelPlacer.setRenderable(andyRenderable);
+        //Places Andy a little above plane.
+        modelPlacer.setLocalPosition(new Vector3(0.0f, 0.25f, 0.0f));
 
-        Node carVisual = new Node();
-        carVisual.setParent(car);
-        carVisual.setRenderable(andyRenderable);
-        carVisual.setLocalScale(new Vector3(0.5f, 0.5f, 0.5f));
-
-        Context context = this;
-        carVisual.setOnTapListener((v, event) -> {
+        Context c = this;
+        base.setOnTapListener((v, event) -> {
             Toast.makeText(
-                    context, "Andy touched.", Toast.LENGTH_LONG)
+                    c, currentLat + "," + currentLong, Toast.LENGTH_LONG)
                     .show();
         });
-
         return base;
     }
 
-//    /***
-//     * Example Node of a 3D model
-//     *
-//     * @return
-//     */
-//    private Node getAndy() {
-//        Node base = new Node();
-//        base.setRenderable(andyRenderable);
-//        Context c = this;
-//        base.setOnTapListener((v, event) -> {
-//            Toast.makeText(
-//                    c, "Andy touched.", Toast.LENGTH_LONG)
-//                    .show();
-//        });
-//        return base;
-//    }
+    private boolean tryPlaceCar (MotionEvent tap, Frame frame) {
+        if (tap != null && frame.getCamera().getTrackingState() == TrackingState.TRACKING) {
+            for (HitResult hit : frame.hitTest(tap)) {
+                Trackable trackable = hit.getTrackable();
+                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())) {
+                    // Create the Anchor.
+                    Anchor anchor = hit.createAnchor();
+                    AnchorNode anchorNode = new AnchorNode(anchor);
+                    anchorNode.setParent(arSceneView.getScene());
+                    Node carModel = setCarModel();
+                    anchorNode.addChild(carModel);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void onSingleTap(MotionEvent tap) {
+        if (!hasFinishedLoading) {
+            // We can't do anything yet.
+            return;
+        }
+
+        Frame frame = arSceneView.getArFrame();
+        if (frame != null) {
+            if (!hasPlacedCar && tryPlaceCar (tap, frame)) {
+                hasPlacedCar = true;
+            }
+        }
+    }
 
     /**
      * Make sure we call locationScene.resume();
