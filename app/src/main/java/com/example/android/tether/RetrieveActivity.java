@@ -16,7 +16,6 @@
 package com.example.android.tether;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -25,7 +24,6 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -56,13 +54,15 @@ import uk.co.appoly.arcorelocation.rendering.LocationNodeRender;
 import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
 
 /**
- *  This activity lets the user store their GPS location via AR
+ * This is a simple example that shows how to create an augmented reality (AR) application using the
+ * ARCore and Sceneform APIs.
  */
-public class LocationActivity extends AppCompatActivity {
+public class RetrieveActivity extends AppCompatActivity {
     private boolean installRequested;
     private boolean hasFinishedLoading = false;
     private boolean hasPlacedCar = false;
     private boolean hasSetLayoutRenderable = false;
+    private boolean hasSetAndyRenderable = false;
 
     private GestureDetector gestureDetector;
     private Snackbar loadingMessageSnackbar = null;
@@ -71,7 +71,7 @@ public class LocationActivity extends AppCompatActivity {
 
     // Renderables for this example
     private ModelRenderable andyRenderable;
-    private ViewRenderable locationLayoutRenderable;
+    private ViewRenderable exampleLayoutRenderable;
 
     // Our ARCore-Location scene
     private LocationScene locationScene;
@@ -91,7 +91,7 @@ public class LocationActivity extends AppCompatActivity {
         arSceneView = findViewById(R.id.ar_scene_view);
 
         // Build a renderable from a 2D View.
-        CompletableFuture<ViewRenderable> locationLayout =
+        CompletableFuture<ViewRenderable> exampleLayout =
                 ViewRenderable.builder()
                         .setView(this, R.layout.info_layout)
                         .build();
@@ -104,7 +104,7 @@ public class LocationActivity extends AppCompatActivity {
 
 
         CompletableFuture.allOf(
-                locationLayout,
+                exampleLayout,
                 andy)
                 .handle(
                         (notUsed, throwable) -> {
@@ -118,7 +118,7 @@ public class LocationActivity extends AppCompatActivity {
                             }
 
                             try {
-                                locationLayoutRenderable = locationLayout.get();
+                                exampleLayoutRenderable = exampleLayout.get();
                                 andyRenderable = andy.get();
                                 hasFinishedLoading = true;
 
@@ -175,6 +175,26 @@ public class LocationActivity extends AppCompatActivity {
                                 // If our locationScene object hasn't been setup yet, this is a good time to do it
                                 // We know that here, the AR components have been initiated.
                                 locationScene = new LocationScene(this, this, arSceneView);
+
+                                // Now lets create our location markers.
+                                // First, a layout
+                                // TODO: Represent this as our device location on HitResult tap
+                                layoutLocationMarker = new LocationMarker(
+                                        -84.386212,
+                                        33.750697,
+                                        getExampleView()
+                                );
+
+                                // An example "onRender" event, called every frame
+                                // Updates the layout with the markers distance
+                                layoutLocationMarker.setRenderEvent(new LocationNodeRender() {
+                                    @Override
+                                    public void render(LocationNode node) {
+                                        View eView = exampleLayoutRenderable.getView();
+                                        TextView distanceTextView = eView.findViewById(R.id.textView);
+                                        distanceTextView.setText(node.getDistance() + "M");
+                                    }
+                                });
                             }
 
                             Frame frame = arSceneView.getArFrame();
@@ -190,38 +210,26 @@ public class LocationActivity extends AppCompatActivity {
                             if (locationScene != null) {
                                 locationScene.processFrame(frame);
 
-                                //Set to true after onSingleTap()
                                 if (hasPlacedCar) {
 
-                                    // Set the current latitude and longitude of device - for future position of marker
-                                    currentLat = locationScene.deviceLocation.currentBestLocation.getLatitude();
-                                    currentLong = locationScene.deviceLocation.currentBestLocation.getLongitude();
-
-                                    // TODO: Represent this as our device location on HitResult tap
-                                    layoutLocationMarker = new LocationMarker(
-                                            currentLong,
-                                            currentLat,
-                                            setLocationLayout()
-                                    );
-
-                                    // An example "onRender" event, called every frame
-                                    // Updates the layout with the markers distance
-                                    layoutLocationMarker.setRenderEvent(new LocationNodeRender() {
-                                        @Override
-                                        public void render(LocationNode node) {
-                                            View eView = locationLayoutRenderable.getView();
-                                            TextView distanceTextView = eView.findViewById(R.id.textView);
-                                            distanceTextView.setText(node.getDistance() + "M");
-                                        }
-                                    });
-
-                                    //These statements control if there is currently one instance of the layout/model
                                     if (!hasSetLayoutRenderable) {
                                         // Adding the marker
                                         locationScene.mLocationMarkers.add(layoutLocationMarker);
-
-                                        //We just want one layout to be created
                                         hasSetLayoutRenderable = true;
+                                    }
+
+                                    if (!hasSetAndyRenderable) {
+                                        //Adding a simple location marker of a 3D model
+                                        locationScene.mLocationMarkers.add(
+                                                new LocationMarker(
+                                                        -84.386212,
+                                                        33.750697,
+                                                        setCarModel()));
+
+                                        currentLat = 33.750697;
+                                        currentLong = -84.386212;
+
+                                        hasSetAndyRenderable = true;
                                     }
                                 }
                             }
@@ -240,17 +248,17 @@ public class LocationActivity extends AppCompatActivity {
         ARLocationPermissionHelper.requestPermission(this);
     }
 
-
-
     /**
-     *  We may not need this layout for storage.
+     * Example node of a layout
+     *
+     * @return
      */
-    private Node setLocationLayout() {
+    private Node getExampleView() {
         Node base = new Node();
-        base.setRenderable(locationLayoutRenderable);
+        base.setRenderable(exampleLayoutRenderable);
         Context c = this;
         // Add  listeners etc here
-        View eView = locationLayoutRenderable.getView();
+        View eView = exampleLayoutRenderable.getView();
         eView.setOnTouchListener((v, event) -> {
             Toast.makeText(
                     c, "Location marker touched.", Toast.LENGTH_LONG)
@@ -261,20 +269,22 @@ public class LocationActivity extends AppCompatActivity {
         return base;
     }
 
-    /**
-     *  Sets the node for renderable objects (car).
+    /***
+     * Example Node of a 3D model
+     *
+     * @return
      */
     private Node setCarModel() {
         Node base = new Node();
         Node model = new Node();
         model.setParent(base);
-        model.setLocalPosition(new Vector3(0.0f, 0.0f, 0.0f));
+        model.setLocalPosition(new Vector3(0.0f, 0.5f, 0.0f));
 
         Node modelPlacer = new Node();
         modelPlacer.setParent(model);
         modelPlacer.setRenderable(andyRenderable);
         //Places Andy a little above plane.
-        modelPlacer.setLocalPosition(new Vector3(0.0f, 0.75f, 0.0f));
+        modelPlacer.setLocalPosition(new Vector3(0.0f, 0.25f, 0.0f));
 
         Context c = this;
         base.setOnTapListener((v, event) -> {
@@ -418,7 +428,7 @@ public class LocationActivity extends AppCompatActivity {
 
         loadingMessageSnackbar =
                 Snackbar.make(
-                        LocationActivity.this.findViewById(android.R.id.content),
+                        RetrieveActivity.this.findViewById(android.R.id.content),
                         R.string.plane_finding,
                         Snackbar.LENGTH_INDEFINITE);
         loadingMessageSnackbar.getView().setBackgroundColor(0xbf323232);

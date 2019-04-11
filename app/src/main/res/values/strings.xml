@@ -1,7 +1,12 @@
 <resources>
     <string name="app_name">Tether</string>
+
+    <string name="greeting_text">Welcome to Tether</string>
+    <string name="begin_button_text">Start Session</string>
+
     <string name="plane_finding">Searching for planes&#8230;</string>
-    <string name="sample_button_text">This button is a placeholder</string>
+    <string name="store_car_text">Tap the plane to place your car marker!</string>
+    <string name="retrieve_button_text">Retrieve Car Location</string>
     <string name="sample_text">This is our sample AR Car Marker</string>
     <string name="action_settings">Settings</string>
 </resources>
