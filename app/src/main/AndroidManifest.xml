@@ -43,6 +43,7 @@
             android:exported="true"
             android:theme="@style/Theme.AppCompat.NoActionBar"
             android:screenOrientation="locked" />
+
         <activity android:name="com.example.android.tether.RetrieveActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"

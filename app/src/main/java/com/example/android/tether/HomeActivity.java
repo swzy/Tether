@@ -7,22 +7,31 @@ import android.view.View;
 import android.widget.Button;
 
 public class HomeActivity extends AppCompatActivity {
-    private Button mButton;
+    private Button storeButton;
+    private Button retrieveButton;
 
-    //Simple landing page. Can set up a splash screen or auth.
+    //Simple landing page. Can set up a splash screen or auth in the future.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        mButton = findViewById(R.id.enterButton);
-        mButton.setOnClickListener(new View.OnClickListener() {
+        storeButton = findViewById(R.id.enterButton);
+        storeButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     Intent i = new Intent(HomeActivity.this, LocationActivity.class);
                     startActivity(i);
                 }
+        });
+
+        retrieveButton = findViewById(R.id.retrieveButton);
+        retrieveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(HomeActivity.this, RetrieveActivity.class);
+                startActivity(i);
+            }
         });
     }
 }

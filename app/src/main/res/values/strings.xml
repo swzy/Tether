@@ -3,8 +3,9 @@
 
     <string name="greeting_text">Welcome to Tether</string>
     <string name="begin_button_text">Start Session</string>
+    <string name="retrieve_session_text">Retrieve My Car!</string>
 
-    <string name="plane_finding">Searching for planes&#8230;</string>
+    <string name="plane_finding">Searching for planes for car marker storage&#8230;</string>
     <string name="store_car_text">Tap the plane to place your car marker!</string>
     <string name="retrieve_button_text">Retrieve Car Location</string>
     <string name="sample_text">This is our sample AR Car Marker</string>

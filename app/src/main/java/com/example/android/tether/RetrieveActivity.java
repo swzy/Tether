@@ -80,8 +80,6 @@ public class RetrieveActivity extends AppCompatActivity {
     private double currentLat = 0;
     private double currentLong = 0;
 
-
-
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
     // CompletableFuture requires api level 24

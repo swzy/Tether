@@ -16,8 +16,8 @@
 package com.example.android.tether;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -25,8 +25,6 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
@@ -44,15 +42,14 @@ import com.google.ar.sceneform.HitTestResult;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
-import com.google.ar.sceneform.rendering.ViewRenderable;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
-import uk.co.appoly.arcorelocation.rendering.LocationNode;
-import uk.co.appoly.arcorelocation.rendering.LocationNodeRender;
 import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
 
 /**
@@ -62,24 +59,25 @@ public class LocationActivity extends AppCompatActivity {
     private boolean installRequested;
     private boolean hasFinishedLoading = false;
     private boolean hasPlacedCar = false;
-    private boolean hasSetLayoutRenderable = false;
 
     private GestureDetector gestureDetector;
     private Snackbar loadingMessageSnackbar = null;
 
     private ArSceneView arSceneView;
 
-    // Renderables for this example
+    // Renderables for this activity
     private ModelRenderable andyRenderable;
-    private ViewRenderable locationLayoutRenderable;
 
     // Our ARCore-Location scene
     private LocationScene locationScene;
-    private LocationMarker layoutLocationMarker;
 
+    private User user;
     private double currentLat = 0;
     private double currentLong = 0;
 
+    // Firebase instance variables
+    private FirebaseDatabase mDatabase;
+    private DatabaseReference mDatabaseRef;
 
 
     @Override
@@ -89,12 +87,10 @@ public class LocationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sceneform);
         arSceneView = findViewById(R.id.ar_scene_view);
-
-        // Build a renderable from a 2D View.
-        CompletableFuture<ViewRenderable> locationLayout =
-                ViewRenderable.builder()
-                        .setView(this, R.layout.info_layout)
-                        .build();
+        //Firebase initialization
+        FirebaseApp.initializeApp(this);
+        mDatabase = FirebaseDatabase.getInstance();
+        mDatabaseRef = mDatabase.getReference();
 
         // When you build a Renderable, Sceneform loads its resources in the background while returning
         // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
@@ -104,7 +100,6 @@ public class LocationActivity extends AppCompatActivity {
 
 
         CompletableFuture.allOf(
-                locationLayout,
                 andy)
                 .handle(
                         (notUsed, throwable) -> {
@@ -118,7 +113,6 @@ public class LocationActivity extends AppCompatActivity {
                             }
 
                             try {
-                                locationLayoutRenderable = locationLayout.get();
                                 andyRenderable = andy.get();
                                 hasFinishedLoading = true;
 
@@ -186,7 +180,6 @@ public class LocationActivity extends AppCompatActivity {
                                 return;
                             }
 
-                            // TODO: Mark GPS location for storage in Firebase container
                             if (locationScene != null) {
                                 locationScene.processFrame(frame);
 
@@ -197,32 +190,10 @@ public class LocationActivity extends AppCompatActivity {
                                     currentLat = locationScene.deviceLocation.currentBestLocation.getLatitude();
                                     currentLong = locationScene.deviceLocation.currentBestLocation.getLongitude();
 
-                                    // TODO: Represent this as our device location on HitResult tap
-                                    layoutLocationMarker = new LocationMarker(
-                                            currentLong,
-                                            currentLat,
-                                            setLocationLayout()
-                                    );
+                                    String deviceId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+                                    user = new User(deviceId, currentLat, currentLong, 0);
 
-                                    // An example "onRender" event, called every frame
-                                    // Updates the layout with the markers distance
-                                    layoutLocationMarker.setRenderEvent(new LocationNodeRender() {
-                                        @Override
-                                        public void render(LocationNode node) {
-                                            View eView = locationLayoutRenderable.getView();
-                                            TextView distanceTextView = eView.findViewById(R.id.textView);
-                                            distanceTextView.setText(node.getDistance() + "M");
-                                        }
-                                    });
-
-                                    //These statements control if there is currently one instance of the layout/model
-                                    if (!hasSetLayoutRenderable) {
-                                        // Adding the marker
-                                        locationScene.mLocationMarkers.add(layoutLocationMarker);
-
-                                        //We just want one layout to be created
-                                        hasSetLayoutRenderable = true;
-                                    }
+                                    storeFBLocation(user);
                                 }
                             }
 
@@ -238,32 +209,26 @@ public class LocationActivity extends AppCompatActivity {
 
         // Lastly request CAMERA & fine location permission which is required by ARCore-Location.
         ARLocationPermissionHelper.requestPermission(this);
+
     }
 
+    private void storeFBLocation(User user) {
+        String id = user.getId();
+        double lat = user.getLatitude();
+        double lon = user.getLongitude();
+        double elev = user.getElevation();
 
-
-    /**
-     *  We may not need this layout for storage.
-     */
-    private Node setLocationLayout() {
-        Node base = new Node();
-        base.setRenderable(locationLayoutRenderable);
-        Context c = this;
-        // Add  listeners etc here
-        View eView = locationLayoutRenderable.getView();
-        eView.setOnTouchListener((v, event) -> {
-            Toast.makeText(
-                    c, "Location marker touched.", Toast.LENGTH_LONG)
-                    .show();
-            return false;
-        });
-
-        return base;
+        // TODO: Implement storage in try/catch
+        // Store values in database under device id
+        mDatabaseRef.child(id).child("latitude").setValue(lat);
+        mDatabaseRef.child(id).child("longitude").setValue(lon);
+        mDatabaseRef.child(id).child("elevation").setValue(elev);
     }
 
     /**
      *  Sets the node for renderable objects (car).
      */
+
     private Node setCarModel() {
         Node base = new Node();
         Node model = new Node();
