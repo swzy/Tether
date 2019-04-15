@@ -21,27 +21,19 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
-import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Session;
-import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableException;
-import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
-import com.google.ar.sceneform.HitTestResult;
 import com.google.ar.sceneform.Node;
-import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ViewRenderable;
 import com.google.firebase.FirebaseApp;
@@ -62,21 +54,19 @@ import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
 
 /**
  *  This activity handles the retrieval of GPS coordinates and converts to a trackable view for user to follow.
- *  Currently quite unstable and inaccurate.
+ *  Currently unstable and inaccurate.
  */
 public class RetrieveActivity extends AppCompatActivity {
     private boolean installRequested;
     private boolean hasFinishedLoading = false;
-    private boolean hasPlacedCar = false;
 
-    private GestureDetector gestureDetector;
     private Snackbar loadingMessageSnackbar = null;
 
     private ArSceneView arSceneView;
 
-    // Renderables for this example
-    private ModelRenderable andyRenderable;
+    // Renderables
     private ViewRenderable exampleLayoutRenderable;
+    private ModelRenderable andyRenderable;
 
     // Our ARCore-Location scene
     private LocationScene locationScene;
@@ -85,17 +75,10 @@ public class RetrieveActivity extends AppCompatActivity {
     private User user;
     private double currentLat = 0;
     private double currentLong = 0;
-    private double currentElev = 0;
 
     // Firebase instance variables
     private FirebaseDatabase mDatabase;
     private DatabaseReference mDatabaseRef;
-
-    //Get latitude, longitude, elevation from firebase and store/use it locally for locationScene
-    //Show distance (textview) above 3D marker
-
-    private String dbData;
-
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -126,7 +109,7 @@ public class RetrieveActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                dbData = "Something happened.";
+
             }
         });
 
@@ -168,38 +151,6 @@ public class RetrieveActivity extends AppCompatActivity {
                             return null;
                         });
 
-        // Set a touch listener on the Scene to listen for taps.
-        arSceneView
-                .getScene()
-                .setOnTouchListener(
-                        (HitTestResult hitTestResult, MotionEvent event) -> {
-                            // If the pad hasn't been placed yet, detect a tap and then check to see if
-                            // the tap occurred on an ARCore plane.
-                            if (!hasPlacedCar) {
-                                return gestureDetector.onTouchEvent(event);
-                            }
-
-                            // Otherwise return false so that the touch event can propagate to the scene.
-                            return false;
-                        });
-
-        // Set up a tap gesture detector.
-        gestureDetector =
-                new GestureDetector(
-                        this,
-                        new GestureDetector.SimpleOnGestureListener() {
-                            @Override
-                            public boolean onSingleTapUp(MotionEvent e) {
-                                onSingleTap(e);
-                                return true;
-                            }
-
-                            @Override
-                            public boolean onDown(MotionEvent e) {
-                                return true;
-                            }
-                        });
-
         // Set an update listener on the Scene that will hide the loading message once a Plane is
         // detected.
         arSceneView
@@ -215,13 +166,11 @@ public class RetrieveActivity extends AppCompatActivity {
                                 // We know that here, the AR components have been initiated.
                                 locationScene = new LocationScene(this, this, arSceneView);
 
-                                // Now lets create our location markers.
-                                // First, a layout
-                                // TODO: Represent this as our device location on HitResult tap
+                                // Location markers instantiated with database information
                                 layoutLocationMarker = new LocationMarker(
                                         currentLong,
                                         currentLat,
-                                        getExampleView()
+                                        getLocationView()
                                 );
 
                                 // An example "onRender" event, called every frame
@@ -231,7 +180,12 @@ public class RetrieveActivity extends AppCompatActivity {
                                     public void render(LocationNode node) {
                                         View eView = exampleLayoutRenderable.getView();
                                         TextView distanceTextView = eView.findViewById(R.id.textView);
-                                        distanceTextView.setText(node.getDistance() + "M");
+
+                                        if (node.getDistance() > 15) {
+                                            distanceTextView.setText(node.getDistance() + "M");
+                                        } else {
+                                            distanceTextView.setText(node.getDistanceInAR() + "M");
+                                        }
                                     }
                                 });
 
@@ -251,29 +205,6 @@ public class RetrieveActivity extends AppCompatActivity {
 
                             if (locationScene != null) {
                                 locationScene.processFrame(frame);
-
-//                                if (hasPlacedCar) {
-//
-//                                    if (!hasSetLayoutRenderable) {
-//                                        // Adding the marker
-//                                        locationScene.mLocationMarkers.add(layoutLocationMarker);
-//                                        hasSetLayoutRenderable = true;
-//                                    }
-//
-//                                    if (!hasSetAndyRenderable) {
-//                                        //Adding a simple location marker of a 3D model
-//                                        locationScene.mLocationMarkers.add(
-//                                                new LocationMarker(
-//                                                        -84.386212,
-//                                                        33.750697,
-//                                                        setCarModel()));
-//
-//                                        currentLat = 33.750697;
-//                                        currentLong = -84.386212;
-//
-//                                        hasSetAndyRenderable = true;
-//                                    }
-//                                }
                             }
 
                             if (loadingMessageSnackbar != null) {
@@ -295,7 +226,7 @@ public class RetrieveActivity extends AppCompatActivity {
      *
      * @return
      */
-    private Node getExampleView() {
+    private Node getLocationView () {
         Node base = new Node();
         base.setRenderable(exampleLayoutRenderable);
         Context c = this;
@@ -311,62 +242,16 @@ public class RetrieveActivity extends AppCompatActivity {
         return base;
     }
 
-    /***
-     * Example Node of a 3D model
-     *
-     * @return
-     */
-    private Node setCarModel() {
+    private Node getAndy() {
         Node base = new Node();
-        Node model = new Node();
-        model.setParent(base);
-        model.setLocalPosition(new Vector3(0.0f, 0.5f, 0.0f));
-
-        Node modelPlacer = new Node();
-        modelPlacer.setParent(model);
-        modelPlacer.setRenderable(andyRenderable);
-        //Places Andy a little above plane.
-        modelPlacer.setLocalPosition(new Vector3(0.0f, 0.25f, 0.0f));
-
+        base.setRenderable(andyRenderable);
         Context c = this;
         base.setOnTapListener((v, event) -> {
             Toast.makeText(
-                    c, currentLat + "," + currentLong, Toast.LENGTH_LONG)
+                    c, "Andy touched.", Toast.LENGTH_LONG)
                     .show();
         });
         return base;
-    }
-
-    private boolean tryPlaceCar (MotionEvent tap, Frame frame) {
-        if (tap != null && frame.getCamera().getTrackingState() == TrackingState.TRACKING) {
-            for (HitResult hit : frame.hitTest(tap)) {
-                Trackable trackable = hit.getTrackable();
-                if (trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())) {
-                    // Create the Anchor.
-                    Anchor anchor = hit.createAnchor();
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setParent(arSceneView.getScene());
-                    Node carModel = setCarModel();
-                    anchorNode.addChild(carModel);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void onSingleTap(MotionEvent tap) {
-        if (!hasFinishedLoading) {
-            // We can't do anything yet.
-            return;
-        }
-
-        Frame frame = arSceneView.getArFrame();
-        if (frame != null) {
-            if (!hasPlacedCar && tryPlaceCar (tap, frame)) {
-                hasPlacedCar = true;
-            }
-        }
     }
 
     private String getDeviceID() {
