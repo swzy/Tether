@@ -13,7 +13,7 @@ public class StoreFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        View v = inflater.inflate(R.layout.fragment_store, container, false);
+        View v = inflater.inflate(R.layout.fragment_store_top, container, false);
         // mInstruction = v.findViewById(R.id.store_car_text);
 
         // Inflate the layout for this fragment

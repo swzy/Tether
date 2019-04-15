@@ -85,7 +85,7 @@ public class LocationActivity extends AppCompatActivity {
     // CompletableFuture requires api level 24
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sceneform);
+        setContentView(R.layout.storecar_sceneform);
         arSceneView = findViewById(R.id.ar_scene_view);
         //Firebase initialization
         FirebaseApp.initializeApp(this);
@@ -220,9 +220,9 @@ public class LocationActivity extends AppCompatActivity {
 
         // TODO: Implement storage in try/catch
         // Store values in database under device id
-        mDatabaseRef.child(id).child("latitude").setValue(lat);
-        mDatabaseRef.child(id).child("longitude").setValue(lon);
-        mDatabaseRef.child(id).child("elevation").setValue(elev);
+        mDatabaseRef.child("users").child(id).child("latitude").setValue(lat);
+        mDatabaseRef.child("users").child(id).child("longitude").setValue(lon);
+        mDatabaseRef.child("users").child(id).child("elevation").setValue(elev);
     }
 
     /**

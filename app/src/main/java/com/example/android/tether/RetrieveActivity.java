@@ -17,6 +17,7 @@ package com.example.android.tether;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -43,6 +44,12 @@ import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ViewRenderable;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -54,15 +61,13 @@ import uk.co.appoly.arcorelocation.rendering.LocationNodeRender;
 import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
 
 /**
- * This is a simple example that shows how to create an augmented reality (AR) application using the
- * ARCore and Sceneform APIs.
+ *  This activity handles the retrieval of GPS coordinates and converts to a trackable view for user to follow.
+ *  Currently quite unstable and inaccurate.
  */
 public class RetrieveActivity extends AppCompatActivity {
     private boolean installRequested;
     private boolean hasFinishedLoading = false;
     private boolean hasPlacedCar = false;
-    private boolean hasSetLayoutRenderable = false;
-    private boolean hasSetAndyRenderable = false;
 
     private GestureDetector gestureDetector;
     private Snackbar loadingMessageSnackbar = null;
@@ -77,16 +82,53 @@ public class RetrieveActivity extends AppCompatActivity {
     private LocationScene locationScene;
     private LocationMarker layoutLocationMarker;
 
+    private User user;
     private double currentLat = 0;
     private double currentLong = 0;
+    private double currentElev = 0;
+
+    // Firebase instance variables
+    private FirebaseDatabase mDatabase;
+    private DatabaseReference mDatabaseRef;
+
+    //Get latitude, longitude, elevation from firebase and store/use it locally for locationScene
+    //Show distance (textview) above 3D marker
+
+    private String dbData;
+
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
     // CompletableFuture requires api level 24
     protected void onCreate(Bundle savedInstanceState) {
+        FirebaseApp.initializeApp(this);
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sceneform);
+        setContentView(R.layout.retrievecar_sceneform);
         arSceneView = findViewById(R.id.ar_scene_view);
+
+        mDatabase = FirebaseDatabase.getInstance();
+        mDatabaseRef = mDatabase.getReference();
+
+        String id = getDeviceID();
+
+        // Database listener
+        mDatabaseRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                //This may cause problems.
+                currentLat = (Double) dataSnapshot.child("users").child(id).child("latitude").getValue();
+                currentLong = (Double) dataSnapshot.child("users").child(id).child("longitude").getValue();
+
+                // Currently throws Long to Double casting error, but true elevation is not supported by this application regardless.
+                // currentElev = (Double) dataSnapshot.child("users").child(id).child("elevation").getValue();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                dbData = "Something happened.";
+            }
+        });
 
         // Build a renderable from a 2D View.
         CompletableFuture<ViewRenderable> exampleLayout =
@@ -99,7 +141,6 @@ public class RetrieveActivity extends AppCompatActivity {
         CompletableFuture<ModelRenderable> andy = ModelRenderable.builder()
                 .setSource(this, R.raw.andy)
                 .build();
-
 
         CompletableFuture.allOf(
                 exampleLayout,
@@ -178,8 +219,8 @@ public class RetrieveActivity extends AppCompatActivity {
                                 // First, a layout
                                 // TODO: Represent this as our device location on HitResult tap
                                 layoutLocationMarker = new LocationMarker(
-                                        -84.386212,
-                                        33.750697,
+                                        currentLong,
+                                        currentLat,
                                         getExampleView()
                                 );
 
@@ -193,6 +234,10 @@ public class RetrieveActivity extends AppCompatActivity {
                                         distanceTextView.setText(node.getDistance() + "M");
                                     }
                                 });
+
+                                // Adding the marker
+                                locationScene.mLocationMarkers.add(layoutLocationMarker);
+
                             }
 
                             Frame frame = arSceneView.getArFrame();
@@ -204,32 +249,31 @@ public class RetrieveActivity extends AppCompatActivity {
                                 return;
                             }
 
-                            // TODO: Mark GPS location for storage in Firebase container
                             if (locationScene != null) {
                                 locationScene.processFrame(frame);
 
-                                if (hasPlacedCar) {
-
-                                    if (!hasSetLayoutRenderable) {
-                                        // Adding the marker
-                                        locationScene.mLocationMarkers.add(layoutLocationMarker);
-                                        hasSetLayoutRenderable = true;
-                                    }
-
-                                    if (!hasSetAndyRenderable) {
-                                        //Adding a simple location marker of a 3D model
-                                        locationScene.mLocationMarkers.add(
-                                                new LocationMarker(
-                                                        -84.386212,
-                                                        33.750697,
-                                                        setCarModel()));
-
-                                        currentLat = 33.750697;
-                                        currentLong = -84.386212;
-
-                                        hasSetAndyRenderable = true;
-                                    }
-                                }
+//                                if (hasPlacedCar) {
+//
+//                                    if (!hasSetLayoutRenderable) {
+//                                        // Adding the marker
+//                                        locationScene.mLocationMarkers.add(layoutLocationMarker);
+//                                        hasSetLayoutRenderable = true;
+//                                    }
+//
+//                                    if (!hasSetAndyRenderable) {
+//                                        //Adding a simple location marker of a 3D model
+//                                        locationScene.mLocationMarkers.add(
+//                                                new LocationMarker(
+//                                                        -84.386212,
+//                                                        33.750697,
+//                                                        setCarModel()));
+//
+//                                        currentLat = 33.750697;
+//                                        currentLong = -84.386212;
+//
+//                                        hasSetAndyRenderable = true;
+//                                    }
+//                                }
                             }
 
                             if (loadingMessageSnackbar != null) {
@@ -259,7 +303,7 @@ public class RetrieveActivity extends AppCompatActivity {
         View eView = exampleLayoutRenderable.getView();
         eView.setOnTouchListener((v, event) -> {
             Toast.makeText(
-                    c, "Location marker touched.", Toast.LENGTH_LONG)
+                    c, "Destination at: " + currentLat + "," + currentLong, Toast.LENGTH_LONG)
                     .show();
             return false;
         });
@@ -323,6 +367,10 @@ public class RetrieveActivity extends AppCompatActivity {
                 hasPlacedCar = true;
             }
         }
+    }
+
+    private String getDeviceID() {
+        return Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
     }
 
     /**
@@ -427,7 +475,7 @@ public class RetrieveActivity extends AppCompatActivity {
         loadingMessageSnackbar =
                 Snackbar.make(
                         RetrieveActivity.this.findViewById(android.R.id.content),
-                        R.string.plane_finding,
+                        R.string.banner_finding,
                         Snackbar.LENGTH_INDEFINITE);
         loadingMessageSnackbar.getView().setBackgroundColor(0xbf323232);
         loadingMessageSnackbar.show();
