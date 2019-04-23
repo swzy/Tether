@@ -45,7 +45,7 @@ public class HomeActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View view) {
                     toast.makeText(HomeActivity.this, "Let's store your car!", Toast.LENGTH_LONG).show();
-                    Intent i = new Intent(HomeActivity.this, LocationActivity.class);
+                    Intent i = new Intent(HomeActivity.this, StoreActivity.class);
                     startActivity(i);
                 }
         });
@@ -60,7 +60,7 @@ public class HomeActivity extends AppCompatActivity {
                 mDatabaseRef.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        if (dataSnapshot.hasChild(id)) {
+                        if (dataSnapshot.child("users").hasChild(id)) {
                             toast.makeText(HomeActivity.this, "Retrieving car location from database!", Toast.LENGTH_LONG).show();
                             Intent i = new Intent(HomeActivity.this, RetrieveActivity.class);
                             startActivity(i);

@@ -55,7 +55,7 @@ import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
 /**
  *  This activity lets the user store their GPS location via AR
  */
-public class LocationActivity extends AppCompatActivity {
+public class StoreActivity extends AppCompatActivity {
     private boolean installRequested;
     private boolean hasFinishedLoading = false;
     private boolean hasPlacedCar = false;
@@ -383,7 +383,7 @@ public class LocationActivity extends AppCompatActivity {
 
         loadingMessageSnackbar =
                 Snackbar.make(
-                        LocationActivity.this.findViewById(android.R.id.content),
+                        StoreActivity.this.findViewById(android.R.id.content),
                         R.string.plane_finding,
                         Snackbar.LENGTH_INDEFINITE);
         loadingMessageSnackbar.getView().setBackgroundColor(0xbf323232);

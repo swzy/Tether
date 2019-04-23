@@ -180,11 +180,9 @@ public class RetrieveActivity extends AppCompatActivity {
                                     public void render(LocationNode node) {
                                         View eView = exampleLayoutRenderable.getView();
                                         TextView distanceTextView = eView.findViewById(R.id.textView);
-
-                                        if (node.getDistance() > 15) {
-                                            distanceTextView.setText(node.getDistance() + "M");
-                                        } else {
-                                            distanceTextView.setText(node.getDistanceInAR() + "M");
+                                        distanceTextView.setText(node.getDistance() + "M");
+                                        if (node.getDistance() < 5) {
+                                            distanceTextView.setText(((int) node.getDistanceInAR()) + "M");
                                         }
                                     }
                                 });
